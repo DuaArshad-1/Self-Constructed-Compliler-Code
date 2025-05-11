@@ -456,6 +456,57 @@ int classify(ifstream& file) {
 }
 
 ////CODE HERE SISTERSSSSSS***************************************************************************************************************************************************************************
+string tac;  //full TAC here
+int labelCount = 0;
+int tempCount = 0;
+
+string newLabel() {
+    return "L" + to_string(labelCount++);
+}
+string newTemp() {
+    return "t" + to_string(tempCount++);
+}
+
+struct Attr {
+    string T;
+    string F;
+    string next;
+    string A;
+};
+
+
+// Extracts index from token like "<id,2>" and fetches the corresponding line
+string getIdLexeme(const string& token, const string& filePath = "symbTable.txt") {
+    size_t commaPos = token.find(',');
+    size_t endBracket = token.find('>');
+
+    if (commaPos == string::npos || endBracket == string::npos || commaPos >= endBracket) {
+        cerr << "Invalid token format: " << token << endl;
+        return "";
+    }
+
+    string indexStr = token.substr(commaPos + 1, endBracket - commaPos - 1);
+    int index = stoi(indexStr);  // Convert to int
+
+    ifstream file(filePath);
+    if (!file.is_open()) {
+        cerr << "Failed to open file: " << filePath << endl;
+        return "";
+    }
+
+    string line;
+    int currentLine = 1;
+    while (getline(file, line)) {
+        if (currentLine == index) {
+            return line;
+        }
+        currentLine++;
+    }
+
+    cerr << "Index out of range in symbol table: " << index << endl;
+    return "";
+}
+
 bool Function(int level);
 bool ArgList(int level);
 bool Arg(int level);
@@ -464,18 +515,18 @@ bool Declaration(int level);
 bool Type(int level);
 bool IdentList(int level);
 bool IdentList_(int level);
-bool Stmt(int level);
+bool Stmt(int level, Attr& attr);
 bool ForStmt(int level);
 bool OptExpr(int level);
 bool WhileStmt(int level);
-bool IfStmt(int level);
-bool ElsePart(int level);
+bool IfStmt(int level, Attr& attr);
+bool ElsePart(int level, Attr& attr);
 bool CompStmt(int level);
 bool StmtList(int level);
 bool StmtList_(int level);
 bool Expr(int level);
 bool Expr_(int level);
-bool Rvalue(int level);
+bool Rvalue(int level, Attr& attr);
 bool Rvalue_(int level);
 bool Compare(int level);
 bool Mag(int level);
@@ -483,6 +534,8 @@ bool Mag_(int level);
 bool Term(int level);
 bool Term_(int level);
 bool Factor(int level);
+
+
 
 bool isLit(const string& token) {
     return token.substr(1, 4) == "lit,";
@@ -722,7 +775,7 @@ bool IdentList_(int l) {
     return true;
 }
 
-bool Stmt(int l) {
+bool Stmt(int l, Attr& attr) {
     printNode("Stmt", l);
     if (lookaheadToken == "<res,for>") {
         if (ForStmt(l + 1)) return true;
@@ -824,35 +877,48 @@ bool WhileStmt(int level) {
     return false;
 }
 
-bool IfStmt(int level) {
+bool IfStmt(int level, Attr& attr) {
     printNode("IfStmt", level);
-    // Agar ( Expr ) Stmt ElsePart
+    Attr Rattr; Attr Sattr;
+    Rattr.F = newLabel();
+    Sattr.next = attr.next;
+    // Agar ( Rvalue ) Stmt ElsePart
     if (getNextToken(level + 1) == "<res,Agar>" &&
         getNextToken(level + 1) == "<punc,(>" &&
-        Expr(level + 1) &&
+        Rvalue(level + 1,Rattr) &&
         getNextToken(level + 1) == "<punc,)>" &&
-        Stmt(level + 1) &&
-        ElsePart(level + 1))
+        Stmt(level + 1,Sattr ))
     {
-        return true;
+        Attr elseAttr;
+        elseAttr.T = Rattr.F;
+
+        if (ElsePart(level + 1,elseAttr)) {
+            return true;
+        }
     }
+        
     printErr("IfStmt");
     return false;
 }
 
-bool ElsePart(int level) {
+bool ElsePart(int level, Attr& attr) {
     printNode("ElsePart", level);
+    attr.next = newLabel();
+    tac = tac + "goto " + attr.next + '\n';
+    tac = tac + attr.T+": "+'\n';
     // Wagarna Stmt | ?
     if (lookaheadToken == "<res,Wagarna>") {
+        Attr sattr;//empty  uwu
         if (getNextToken(level + 1) == "<res,Wagarna>" &&
-            Stmt(level + 1))
+            Stmt(level + 1, sattr))
         {
+            tac = tac + attr.next + ": " + '\n';
             return true;
         }
         printErr("ElsePart");
         return false;
     }
-
+    tac = tac + attr.T + ": " + '\n';
     // ? - production
     printNode("(null)", level + 1);
     return true;
@@ -963,7 +1029,7 @@ bool Expr_(int level) {
     return false;
 }
 
-bool Rvalue(int level) {
+bool Rvalue(int level, Attr& attr) {
     printNode("Rvalue", level);
     // Rvalue -> Mag Rvalue_
     if (Mag(level + 1) && Rvalue_(level + 1)) {
@@ -1078,6 +1144,7 @@ bool Factor(int level) {
     printErr("Factor");
     return false;
 }
+
 
 
 int main() {
