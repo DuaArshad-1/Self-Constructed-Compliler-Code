@@ -507,6 +507,20 @@ string getIdLexeme(const string& token, const string& filePath = "symbTable.txt"
     return "";
 }
 
+string getOp(const string& token) {
+    // Must start with "<op," and end with ">"
+    const string prefix = "<op,";
+    if (token.rfind(prefix, 0) != 0 || token.back() != '>') {
+        cerr << "Malformed op-token: " << token << "\n";
+        return "";
+    }
+    // operator is everything between comma and closing '>'
+    size_t start = prefix.size();        // index of first operator char
+    size_t len = token.size() - start - 1;  // exclude trailing '>'
+    return token.substr(start, len);
+}
+
+
 bool Function(int level);
 bool ArgList(int level);
 bool Arg(int level);
@@ -527,9 +541,9 @@ bool StmtList_(int level);
 bool Expr(int level);
 bool Expr_(int level);
 bool Rvalue(int level, Attr& attr);
-bool Rvalue_(int level);
-bool Compare(int level);
-bool Mag(int level);
+bool Rvalue_(int level, Attr& attr);
+bool Compare(int level, Attr& attr);
+bool Mag(int level, Attr& attr);
 bool Mag_(int level);
 bool Term(int level);
 bool Term_(int level);
@@ -681,12 +695,13 @@ bool Type(int l) {
     }
 }
 
-bool Compare(int l) {
+bool Compare(int l, Attr& attr) {
     printNode("Compare", l);
 
     string tokk = getNextToken(l + 1);
     if (tokk == "<op,==>" || tokk == "<op,<>" || tokk == "<op,>>" || tokk == "<op,<=>" || tokk == "<op,>=>" || tokk == "<op,!=>" || tokk == "<op,<>>") {
-
+        string op = getOp(tokk);
+        attr.A = op;
         return true;
     }
     else {
@@ -903,12 +918,14 @@ bool IfStmt(int level, Attr& attr) {
 
 bool ElsePart(int level, Attr& attr) {
     printNode("ElsePart", level);
-    attr.next = newLabel();
-    tac = tac + "goto " + attr.next + '\n';
-    tac = tac + attr.T+": "+'\n';
+
     // Wagarna Stmt | ?
     if (lookaheadToken == "<res,Wagarna>") {
+
         Attr sattr;//empty  uwu
+        attr.next = newLabel();
+        tac = tac + "goto " + attr.next + '\n';
+        tac = tac + attr.T + ": " + '\n';
         if (getNextToken(level + 1) == "<res,Wagarna>" &&
             Stmt(level + 1, sattr))
         {
@@ -1032,14 +1049,22 @@ bool Expr_(int level) {
 bool Rvalue(int level, Attr& attr) {
     printNode("Rvalue", level);
     // Rvalue -> Mag Rvalue_
-    if (Mag(level + 1) && Rvalue_(level + 1)) {
-        return true;
+    Attr magAttr; Attr r_Attr;
+    if (Mag(level + 1, magAttr)) {
+        r_Attr.A = magAttr.A;
+        r_Attr.F = attr.F;
+
+        if (Rvalue_(level + 1, r_Attr)) {
+            return true;
+        }
+
     }
+    
     printErr("Rvalue");
     return false;
 }
 
-bool Rvalue_(int level) {
+bool Rvalue_(int level, Attr& attr) {
     printNode("Rvalue'", level);
     // Rvalue' -> Compare Mag Rvalue' | ?
     if (
@@ -1052,8 +1077,20 @@ bool Rvalue_(int level) {
         lookaheadToken == "<op,<>>"
         )
     {
-        if (Compare(level + 1) && Mag(level + 1) && Rvalue_(level + 1)) {
-            return true;
+        Attr cAttr;Attr mAttr;Attr r_Attr;
+        if (Compare(level + 1,cAttr) && Mag(level + 1,mAttr) )
+        {
+            //r_Attr.A = newTemp();
+            //tac = tac + r_Attr.A + " = "+ mAttr.A + '\n';
+            r_Attr.A = mAttr.A;
+            r_Attr.T = newLabel(); r_Attr.F = attr.F;
+            tac = tac + "if " + attr.A + " "+ cAttr.A + " " + r_Attr.A + " goto " + r_Attr.T + '\n';
+            tac = tac + "goto " + attr.F + '\n';
+            tac = tac + r_Attr.T + ": " + '\n';
+            if (Rvalue_(level + 1, r_Attr))
+            {
+                return true;
+            }
         }
         printErr("Rvalue'");
         return false;
@@ -1064,7 +1101,7 @@ bool Rvalue_(int level) {
     return true;
 }
 
-bool Mag(int level) {
+bool Mag(int level, Attr& attr) {
     printNode("Mag", level);
     // Mag -> Term Mag_
     if (Term(level + 1) && Mag_(level + 1)) {
