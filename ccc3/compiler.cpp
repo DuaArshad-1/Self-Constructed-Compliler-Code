@@ -1307,7 +1307,8 @@ int main() {
             cout << toks[i] << " ";
         }
     }
-
+    cout << "THREE ADDRESS CODE" << endl;
+    cout << tac << endl;
     return 0;
 
 }
