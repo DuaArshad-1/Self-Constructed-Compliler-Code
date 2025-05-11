@@ -456,6 +456,71 @@ int classify(ifstream& file) {
 }
 
 ////CODE HERE SISTERSSSSSS***************************************************************************************************************************************************************************
+string tac;  //full TAC here
+int labelCount = 0;
+int tempCount = 0;
+
+string newLabel() {
+    return "L" + to_string(labelCount++);
+}
+string newTemp() {
+    return "t" + to_string(tempCount++);
+}
+
+struct Attr {
+    string T;
+    string F;
+    string next;
+    string A;
+};
+
+
+// Extracts index from token like "<id,2>" and fetches the corresponding line
+string getIdLexeme(const string& token, const string& filePath = "symbTable.txt") {
+    size_t commaPos = token.find(',');
+    size_t endBracket = token.find('>');
+
+    if (commaPos == string::npos || endBracket == string::npos || commaPos >= endBracket) {
+        cerr << "Invalid token format: " << token << endl;
+        return "";
+    }
+
+    string indexStr = token.substr(commaPos + 1, endBracket - commaPos - 1);
+    int index = stoi(indexStr);  // Convert to int
+
+    ifstream file(filePath);
+    if (!file.is_open()) {
+        cerr << "Failed to open file: " << filePath << endl;
+        return "";
+    }
+
+    string line;
+    int currentLine = 1;
+    while (getline(file, line)) {
+        if (currentLine == index) {
+            return line;
+        }
+        currentLine++;
+    }
+
+    cerr << "Index out of range in symbol table: " << index << endl;
+    return "";
+}
+
+string getOp(const string& token) {
+    // Must start with "<op," and end with ">"
+    const string prefix = "<op,";
+    if (token.rfind(prefix, 0) != 0 || token.back() != '>') {
+        cerr << "Malformed op-token: " << token << "\n";
+        return "";
+    }
+    // operator is everything between comma and closing '>'
+    size_t start = prefix.size();        // index of first operator char
+    size_t len = token.size() - start - 1;  // exclude trailing '>'
+    return token.substr(start, len);
+}
+
+
 bool Function(int level);
 bool ArgList(int level);
 bool Arg(int level);
@@ -464,25 +529,27 @@ bool Declaration(int level);
 bool Type(int level);
 bool IdentList(int level);
 bool IdentList_(int level);
-bool Stmt(int level);
+bool Stmt(int level, Attr& attr);
 bool ForStmt(int level);
 bool OptExpr(int level);
 bool WhileStmt(int level);
-bool IfStmt(int level);
-bool ElsePart(int level);
+bool IfStmt(int level, Attr& attr);
+bool ElsePart(int level, Attr& attr);
 bool CompStmt(int level);
 bool StmtList(int level);
 bool StmtList_(int level);
 bool Expr(int level);
 bool Expr_(int level);
-bool Rvalue(int level);
-bool Rvalue_(int level);
-bool Compare(int level);
-bool Mag(int level);
+bool Rvalue(int level, Attr& attr);
+bool Rvalue_(int level, Attr& attr);
+bool Compare(int level, Attr& attr);
+bool Mag(int level, Attr& attr);
 bool Mag_(int level);
 bool Term(int level);
 bool Term_(int level);
 bool Factor(int level);
+
+
 
 bool isLit(const string& token) {
     return token.substr(1, 4) == "lit,";
@@ -628,12 +695,13 @@ bool Type(int l) {
     }
 }
 
-bool Compare(int l) {
+bool Compare(int l, Attr& attr) {
     printNode("Compare", l);
 
     string tokk = getNextToken(l + 1);
     if (tokk == "<op,==>" || tokk == "<op,<>" || tokk == "<op,>>" || tokk == "<op,<=>" || tokk == "<op,>=>" || tokk == "<op,!=>" || tokk == "<op,<>>") {
-
+        string op = getOp(tokk);
+        attr.A = op;
         return true;
     }
     else {
@@ -722,7 +790,7 @@ bool IdentList_(int l) {
     return true;
 }
 
-bool Stmt(int l) {
+bool Stmt(int l, Attr& attr) {
     printNode("Stmt", l);
     if (lookaheadToken == "<res,for>") {
         if (ForStmt(l + 1)) return true;
@@ -824,35 +892,50 @@ bool WhileStmt(int level) {
     return false;
 }
 
-bool IfStmt(int level) {
+bool IfStmt(int level, Attr& attr) {
     printNode("IfStmt", level);
-    // Agar ( Expr ) Stmt ElsePart
+    Attr Rattr; Attr Sattr;
+    Rattr.F = newLabel();
+    Sattr.next = attr.next;
+    // Agar ( Rvalue ) Stmt ElsePart
     if (getNextToken(level + 1) == "<res,Agar>" &&
         getNextToken(level + 1) == "<punc,(>" &&
-        Expr(level + 1) &&
+        Rvalue(level + 1,Rattr) &&
         getNextToken(level + 1) == "<punc,)>" &&
-        Stmt(level + 1) &&
-        ElsePart(level + 1))
+        Stmt(level + 1,Sattr ))
     {
-        return true;
+        Attr elseAttr;
+        elseAttr.T = Rattr.F;
+
+        if (ElsePart(level + 1,elseAttr)) {
+            return true;
+        }
     }
+        
     printErr("IfStmt");
     return false;
 }
 
-bool ElsePart(int level) {
+bool ElsePart(int level, Attr& attr) {
     printNode("ElsePart", level);
+
     // Wagarna Stmt | ?
     if (lookaheadToken == "<res,Wagarna>") {
+
+        Attr sattr;//empty  uwu
+        attr.next = newLabel();
+        tac = tac + "goto " + attr.next + '\n';
+        tac = tac + attr.T + ": " + '\n';
         if (getNextToken(level + 1) == "<res,Wagarna>" &&
-            Stmt(level + 1))
+            Stmt(level + 1, sattr))
         {
+            tac = tac + attr.next + ": " + '\n';
             return true;
         }
         printErr("ElsePart");
         return false;
     }
-
+    tac = tac + attr.T + ": " + '\n';
     // ? - production
     printNode("(null)", level + 1);
     return true;
@@ -963,17 +1046,25 @@ bool Expr_(int level) {
     return false;
 }
 
-bool Rvalue(int level) {
+bool Rvalue(int level, Attr& attr) {
     printNode("Rvalue", level);
     // Rvalue -> Mag Rvalue_
-    if (Mag(level + 1) && Rvalue_(level + 1)) {
-        return true;
+    Attr magAttr; Attr r_Attr;
+    if (Mag(level + 1, magAttr)) {
+        r_Attr.A = magAttr.A;
+        r_Attr.F = attr.F;
+
+        if (Rvalue_(level + 1, r_Attr)) {
+            return true;
+        }
+
     }
+    
     printErr("Rvalue");
     return false;
 }
 
-bool Rvalue_(int level) {
+bool Rvalue_(int level, Attr& attr) {
     printNode("Rvalue'", level);
     // Rvalue' -> Compare Mag Rvalue' | ?
     if (
@@ -986,8 +1077,20 @@ bool Rvalue_(int level) {
         lookaheadToken == "<op,<>>"
         )
     {
-        if (Compare(level + 1) && Mag(level + 1) && Rvalue_(level + 1)) {
-            return true;
+        Attr cAttr;Attr mAttr;Attr r_Attr;
+        if (Compare(level + 1,cAttr) && Mag(level + 1,mAttr) )
+        {
+            //r_Attr.A = newTemp();
+            //tac = tac + r_Attr.A + " = "+ mAttr.A + '\n';
+            r_Attr.A = mAttr.A;
+            r_Attr.T = newLabel(); r_Attr.F = attr.F;
+            tac = tac + "if " + attr.A + " "+ cAttr.A + " " + r_Attr.A + " goto " + r_Attr.T + '\n';
+            tac = tac + "goto " + attr.F + '\n';
+            tac = tac + r_Attr.T + ": " + '\n';
+            if (Rvalue_(level + 1, r_Attr))
+            {
+                return true;
+            }
         }
         printErr("Rvalue'");
         return false;
@@ -998,7 +1101,7 @@ bool Rvalue_(int level) {
     return true;
 }
 
-bool Mag(int level) {
+bool Mag(int level, Attr& attr) {
     printNode("Mag", level);
     // Mag -> Term Mag_
     if (Term(level + 1) && Mag_(level + 1)) {
