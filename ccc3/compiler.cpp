@@ -1083,27 +1083,27 @@ bool Factor(int level) {
 int main() {
 
     //////************************************************************************LEXER PART ********************************************************************************
-    //buffer1[BUFFER_SIZE - 1] = '\0';
-    //buffer2[BUFFER_SIZE - 1] = '\0';
+    buffer1[BUFFER_SIZE - 1] = '\0';
+    buffer2[BUFFER_SIZE - 1] = '\0';
 
-    //populateT();
-    //populateA();
-    //populateAccept();
+    populateT();
+    populateA();
+    populateAccept();
 
-    //ifstream file("testCode.txt");
-    //if (!file) {
-    //    cerr << "Error opening testCode.txt!" << endl;
-    //    return 1;
-    //}
-    //loadBuffer(file, buffer1, inMultiLineComment);
+    ifstream file("testCode.txt");
+    if (!file) {
+        cerr << "Error opening testCode.txt!" << endl;
+        return 1;
+    }
+    loadBuffer(file, buffer1, inMultiLineComment);
 
-    //if (classify(file) == -1) {
-    //    cout << "error in files" << endl;
-    //}
+    if (classify(file) == -1) {
+        cout << "error in files" << endl;
+    }
 
-    //file.close();
-    //cout << "Scanner has edited output files successfully!" << endl;
-    //cout << "heheheheheheeeeeeeee" << endl;
+    file.close();
+    cout << "Scanner has edited output files successfully!" << endl;
+    cout << "heheheheheheeeeeeeee1" << endl;
 
     //////************************************************************************PARSER+SEMANTIC PART ********************************************************************************
     if (readfiles(toks) == -1) //lexer output in the vector

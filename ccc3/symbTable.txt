@@ -1,6 +1,5 @@
 1 Aloo_
 2 _paratha_
 3 _num
-4 num_
-5 n_umber
-6 cou_se
+4 _num1
+5 cou_se

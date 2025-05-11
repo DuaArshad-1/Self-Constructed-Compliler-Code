@@ -1,18 +1,16 @@
 Adadi Aloo_ (Adadi _paratha_)
 {
-Adadi _num ::
-_num:= 10 ::  //comm1 singleline
-Ashriya num_ ::
-num_:= -10.5E+12 ::
-Ashriya n_umber::
-n_umber:= +9.3 :: /*multi line 
-comm2*/
-Harf cou_se ::
-cou_se:= 8 ::
-Agar ( cou_se>6 )
-cou_se + 1  ::
+
+_num:= 5 ::
+while ( _num > 0 ) {
+_num:= _num - 1::
+
+Agar ( _num + 1 < -10.5E+12)
+_num1 := 45::
 Wagarna
-cou_se + 2 ::
-while (cou_se<10)
-cou_se := cou_se + 1::
+cou_se := cou_se + 2 ::
+
+
+cou_se := cou_se + 5 ::
+}
 }
