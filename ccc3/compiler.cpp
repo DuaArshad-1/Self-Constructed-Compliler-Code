@@ -962,89 +962,102 @@ bool Expr(int level) {
     //  3) number Term' Mag' Rvalue'
 
     // 1) identifier Expr'
+    Attr Mattr;
     if (isIdentifier(lookaheadToken)) {
         getNextToken(level + 1);  // consume the identifier
-        if (Expr_(level + 1)) {
+       /* if (Expr_(level + 1)) {
             return true;
+        }*/
+        if (lookaheadToken == "<op,:=>") {
+            getNextToken(level + 1);  // consume ':='
+            /*if (!Expr(level + 1)) {
+                printErr("Expr'");
+                return false;
+            }*/
+            if (Mag(level, Mattr))
+            {
+                tac = tac + getIdLexeme(lookaheadToken) + "=" + Mattr.A + "\n";
+                return true;
+            }
         }
         printErr("Expr");
         return false;
     }
-    // 2) ( Expr ) Term' Mag' Rvalue'
-    else if (lookaheadToken == "<punc,(>") {
-        getNextToken(level + 1);  // consume '('
-        if (!Expr(level + 1)) {
-            printErr("Expr");
-            return false;
-        }
-        if (getNextToken(level + 1) != "<punc,)>") {
-            printErr("Expr");  // expected ')'
-            return false;
-        }
-        // now parse Term' Mag' Rvalue'
-        if (!Term_(level + 1)) {
-            printErr("Expr");
-            return false;
-        }
-        if (!Mag_(level + 1)) {
-            printErr("Expr");
-            return false;
-        }
-        if (!Rvalue_(level + 1)) {
-            printErr("Expr");
-            return false;
-        }
-        return true;
-    }
-    // 3) number Term' Mag' Rvalue'
-    else if (isNum(lookaheadToken)) {
-        getNextToken(level + 1);  // consume the number
-        // now Term' Mag' Rvalue'
-        if (!Term_(level + 1)) {
-            printErr("Expr");
-            return false;
-        }
-        if (!Mag_(level + 1)) {
-            printErr("Expr");
-            return false;
-        }
-        if (!Rvalue_(level + 1)) {
-            printErr("Expr");
-            return false;
-        }
-        return true;
-    }
+    //// 2) ( Expr ) Term' Mag' Rvalue'
+    //else if (lookaheadToken == "<punc,(>") {
+    //    getNextToken(level + 1);  // consume '('
+    //    if (!Expr(level + 1)) {
+    //        printErr("Expr");
+    //        return false;
+    //    }
+    //    if (getNextToken(level + 1) != "<punc,)>") {
+    //        printErr("Expr");  // expected ')'
+    //        return false;
+    //    }
+    //    // now parse Term' Mag' Rvalue'
+    //    if (!Term_(level + 1)) {
+    //        printErr("Expr");
+    //        return false;
+    //    }
+    //    if (!Mag_(level + 1)) {
+    //        printErr("Expr");
+    //        return false;
+    //    }
+    //    if (!Rvalue_(level + 1)) {
+    //        printErr("Expr");
+    //        return false;
+    //    }
+    //    return true;
+    //}
+    //// 3) number Term' Mag' Rvalue'
+    //else if (isNum(lookaheadToken)) {
+    //    getNextToken(level + 1);  // consume the number
+    //    // now Term' Mag' Rvalue'
+    //    if (!Term_(level + 1)) {
+    //        printErr("Expr");
+    //        return false;
+    //    }
+    //    if (!Mag_(level + 1)) {
+    //        printErr("Expr");
+    //        return false;
+    //    }
+    //    if (!Rvalue_(level + 1)) {
+    //        printErr("Expr");
+    //        return false;
+    //    }
+    //    return true;
+    //}
 
     // If none of the above matched, it's an error
     printErr("Expr");
     return false;
 }
 
-bool Expr_(int level) {
-    printNode("Expr'", level);
-    // Grammar:
-    //  Expr' -> := Expr
-    //          | Term' Mag' Rvalue'
-
-    // 1) := Expr
-    if (lookaheadToken == "<op,:=>") {
-        getNextToken(level + 1);  // consume ':='
-        if (!Expr(level + 1)) {
-            printErr("Expr'");
-            return false;
-        }
-        return true;
-    }
-
-    // 2) Term' Mag' Rvalue'
-    // We'll try to parse all three in sequence
-    if (Term_(level + 1) && Mag_(level + 1) && Rvalue_(level + 1)) {
-        return true;
-    }
-
-    printErr("Expr'");
-    return false;
-}
+//bool Expr_(int level) {
+//    printNode("Expr'", level);
+//    // Grammar:
+//    //  Expr' -> := Expr
+//    //          | Term' Mag' Rvalue'
+//
+//    // 1) := Expr
+//    if (lookaheadToken == "<op,:=>") {
+//        getNextToken(level + 1);  // consume ':='
+//        if (!Expr(level + 1)) {
+//            printErr("Expr'");
+//            return false;
+//        }
+//        return true;
+//    }
+//
+//    // 2) Term' Mag' Rvalue'
+//    // We'll try to parse all three in sequence
+//    if (Term_(level + 1) && Mag_(level + 1) && Rvalue_(level + 1)) {
+//        return true;
+//    }
+//
+//    printErr("Expr'");
+//    return false;
+//}
 
 bool Rvalue(int level, Attr& attr) {
     printNode("Rvalue", level);
@@ -1104,20 +1117,50 @@ bool Rvalue_(int level, Attr& attr) {
 bool Mag(int level, Attr& attr) {
     printNode("Mag", level);
     // Mag -> Term Mag_
-    if (Term(level + 1) && Mag_(level + 1)) {
-        return true;
+    Attr M_Attr;
+    Attr Tattr;
+    if (Term(level + 1, Tattr))
+    {
+        M_Attr.A = Tattr.A;
+        if (Mag_(level + 1, M_Attr))
+        {
+            attr.A = M_Attr.A;
+            return true;
+        }
     }
     printErr("Mag");
     return false;
 }
 
-bool Mag_(int level) {
+bool Mag_(int level, Attr& attr) {
     printNode("Mag'", level);
     // Mag' -> + Term Mag' | - Term Mag' | ?
-    if (lookaheadToken == "<op,+>" || lookaheadToken == "<op,->") {
-        string op = getNextToken(level + 1); // consume + or -
-        if (Term(level + 1) && Mag_(level + 1)) {
-            return true;
+    Attr Tattr;
+    Attr M_Attr;
+    if (lookaheadToken == "<op,+>") {
+        string op = getNextToken(level + 1); // consume +
+        if (Term(level + 1, Tattr))
+        {
+            M_Attr.A = newTemp();
+            tac = tac + M_Attr.A + "=" + attr.A + "+" + Tattr.A + "\n";
+            if (Mag_(level + 1)) {
+                attr.A = M_Attr.A;
+                return true;
+            }
+        }
+        printErr("Mag_");
+        return false;
+    }
+    else if (lookaheadToken == "<op,->") {
+        string op = getNextToken(level + 1); // consume -
+        if (Term(level + 1, Tattr))
+        {
+            M_Attr.A = newTemp();
+            tac = tac + M_Attr.A + "=" + attr.A + "-" + Tattr.A + "\n";
+            if (Mag_(level + 1)) {
+                attr.A = M_Attr.A;
+                return true;
+            }
         }
         printErr("Mag_");
         return false;
@@ -1128,23 +1171,54 @@ bool Mag_(int level) {
     return true;
 }
 
-bool Term(int level) {
+bool Term(int level, Attr& attr) {
     printNode("Term", level);
     // Term -> Factor Term_
-    if (Factor(level + 1) && Term_(level + 1)) {
-        return true;
+    Attr T_Attr;
+    Attr Fattr;
+    if (Factor(level + 1,Fattr))
+    {
+        T_Attr.A = Fattr.A;
+        if (Term_(level + 1)) {
+            attr.A = T_Attr.A;
+            return true;
+        }
     }
     printErr("Term");
     return false;
 }
 
-bool Term_(int level) {
+bool Term_(int level, Attr& attr) {
     printNode("Term'", level);
+    Attr T_Attr;
+    Attr Fattr;
     // Term' -> * Factor Term' | / Factor Term' | ?
-    if (lookaheadToken == "<op,*>" || lookaheadToken == "<op,/>") {
-        string op = getNextToken(level + 1); // consume * or /
-        if (Factor(level + 1) && Term_(level + 1)) {
-            return true;
+    if (lookaheadToken == "<op,*>") {
+        string op = getNextToken(level + 1); // consume * 
+        if (Factor(level + 1, Fattr))
+        {
+            T_Attr.A = newTemp();
+            tac = tac + T_Attr.A + "=" + attr.A + "*" + Fattr.A + "\n";
+            if (Term_(level + 1, T_Attr))
+            {
+                attr.A = T_Attr.A;
+                return true;
+            }
+        }
+        printErr("Term_");
+        return false;
+    }
+    else if (lookaheadToken == "<op,/>") {
+        string op = getNextToken(level + 1); // consume /
+        if (Factor(level + 1, Fattr))
+        {
+            T_Attr.A = newTemp();
+            tac = tac + T_Attr.A + "=" + attr.A + "/" + Fattr.A + "\n";
+            if (Term_(level + 1, T_Attr))
+            {
+                attr.A = T_Attr.A;
+                return true;
+            }
         }
         printErr("Term_");
         return false;
@@ -1155,27 +1229,38 @@ bool Term_(int level) {
     return true;
 }
 
-bool Factor(int level) {
+bool Factor(int level, Attr& attr) {
     printNode("Factor", level);
+    Attr magAttr;
     // Factor -> ( Expr ) | identifier | number
     if (lookaheadToken == "<punc,(>") {
         getNextToken(level + 1); // consume '('
-        if (!Expr(level + 1)) {
+        /*if (!Expr(level + 1), magAttr) {
             printErr("Factor");
             return false;
+        }*/
+        if (Mag(level + 1, magAttr))
+        {
+            if (getNextToken(level + 1) == "<punc,)>") {
+                attr.A = magAttr.A;
+                return true;
+            }
         }
-        if (getNextToken(level + 1) == "<punc,)>") {
+        /*if (getNextToken(level + 1) == "<punc,)>") {
+            attr.A = magAttr.A;
             return true;
-        }
+        }*/
         printErr("Factor");
         return false;
     }
     else if (isIdentifier(lookaheadToken)) {
         getNextToken(level + 1);
+        attr.A = getIdLexeme(lookaheadToken);
         return true;
     }
     else if (isNum(lookaheadToken)) {
         getNextToken(level + 1);
+        attr.A= lookaheadToken.substr(lookaheadToken.find(",") + 2, lookaheadToken.length() - 2);
         return true;
     }
     printErr("Factor");
