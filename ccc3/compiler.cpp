@@ -798,6 +798,7 @@ bool F(int level)
 {
   Attr stmts;
   stmts.next = newLabel();
+  Stmt(level, stmts)
 }
 
 bool Stmt(int l, Attr& attr) {
