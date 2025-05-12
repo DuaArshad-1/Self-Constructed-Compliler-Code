@@ -529,7 +529,7 @@ bool Arg(int level);
 bool ArgList_(int level);
 bool Declaration(int level);
 bool Type(int level);
-bool IdentList(int level;
+bool IdentList(int level);
 bool IdentList_(int level);
 bool Stmt(int level, Attr& attr);
 bool ForStmt(int level);
@@ -540,16 +540,16 @@ bool ElsePart(int level, Attr& attr);
 bool CompStmt(int level, Attr& attr);   //change
 bool StmtList(int level, Attr& attr); ///change
 bool StmtList_(int level, Attr& attr); ///change
-bool Expr(int level);
-bool Expr_(int level);
+bool Expr(int level, Attr& attr);
+bool Expr_(int level, Attr& attr);
 bool Rvalue(int level, Attr& attr);
 bool Rvalue_(int level, Attr& attr);
 bool Compare(int level, Attr& attr);
 bool Mag(int level, Attr& attr);
-bool Mag_(int level);
-bool Term(int level);
-bool Term_(int level);
-bool Factor(int level);
+bool Mag_(int level, Attr& attr);
+bool Term(int level, Attr& attr);
+bool Term_(int level, Attr& attr);
+bool Factor(int level, Attr& attr);
 
 
 
@@ -714,19 +714,19 @@ bool Compare(int l, Attr& attr) {
     }
 }
 
-bool Function(int l) {
-    printNode("Function", l);
-    if (Type(l + 1) && isIdentifier(getNextToken(l + 1)) && getNextToken(l + 1) == "<punc,(>" && ArgList(l + 1) &&
-        getNextToken(l + 1) == "<punc,)>" && CompStmt(l + 1))
-    {
-        return true;
-
-    }
-    else {
-        printErr("Function");
-        return false;
-    }
-}
+//bool Function(int l) {
+//    printNode("Function", l);
+//    if (Type(l + 1) && isIdentifier(getNextToken(l + 1)) && getNextToken(l + 1) == "<punc,(>" && ArgList(l + 1) &&
+//        getNextToken(l + 1) == "<punc,)>" && CompStmt(l + 1))
+//    {
+//        return true;
+//
+//    }
+//    else {
+//        printErr("Function");
+//        return false;
+//    }
+//}
 
 bool ArgList(int l) {
     printNode("ArgList", l);
@@ -798,7 +798,7 @@ bool F(int level)
 {
   Attr stmts;
   stmts.next = newLabel();
-  Stmt(level, stmts)
+  Stmt(level, stmts);
 }
 
 bool Stmt(int l, Attr& attr) {
@@ -818,7 +818,8 @@ bool Stmt(int l, Attr& attr) {
     return false;
   } else if (isIdentifier(lookaheadToken) || // identifier (for assignments)
              lookaheadToken == "<punc,(>" || isNum(lookaheadToken)) {
-    if (Expr(l + 1) && getNextToken(l + 1) == "<punc,::>")
+      Attr Eattr;
+    if (Expr(l + 1,Eattr) && getNextToken(l + 1) == "<punc,::>")
       return true;
     printErr("Stmt");
     return false;
@@ -853,43 +854,43 @@ bool Stmt(int l, Attr& attr) {
 
 }
 
-bool ForStmt(int l) {
-    printNode("ForStmt", l);
-    if (getNextToken(l + 1) == "<res,for>"
-        && getNextToken(l + 1) == "<punc,(>"
-        && Expr(l + 1) && getNextToken(l + 1) == "<punc,::>"
-        && OptExpr(l + 1) && getNextToken(l + 1) == "<punc,::>"
-        && OptExpr(l + 1) && getNextToken(l + 1) == "<punc,)>" &&
-        Stmt(l + 1)
-        )
-    {
-        return true;
-    }
-    printErr("ForStmt");
-    return false;
-}
+//bool ForStmt(int l) {
+//    printNode("ForStmt", l);
+//    if (getNextToken(l + 1) == "<res,for>"
+//        && getNextToken(l + 1) == "<punc,(>"
+//        && Expr(l + 1) && getNextToken(l + 1) == "<punc,::>"
+//        && OptExpr(l + 1) && getNextToken(l + 1) == "<punc,::>"
+//        && OptExpr(l + 1) && getNextToken(l + 1) == "<punc,)>" &&
+//        Stmt(l + 1)
+//        )
+//    {
+//        return true;
+//    }
+//    printErr("ForStmt");
+//    return false;
+//}
 
-bool OptExpr(int level) {
-    printNode("OptExpr", level);
-    // If the next token can start an Expr, parse it; otherwise epsilon
-    if (
-        lookaheadToken == "<punc,(>" ||
-        isNum(lookaheadToken) ||
-        isIdentifier(lookaheadToken)
-        // You could add more if your grammar allows strings, booleans, etc.
-        )
-    {
-        if (Expr(level + 1)) {
-            return true;
-        }
-        printErr("OptExpr");
-        return false;
-    }
-
-    // ? - production
-    printNode("(null)", level + 1);
-    return true;
-}
+//bool OptExpr(int level) {
+//    printNode("OptExpr", level);
+//    // If the next token can start an Expr, parse it; otherwise epsilon
+//    if (
+//        lookaheadToken == "<punc,(>" ||
+//        isNum(lookaheadToken) ||
+//        isIdentifier(lookaheadToken)
+//        // You could add more if your grammar allows strings, booleans, etc.
+//        )
+//    {
+//        if (Expr(level + 1)) {
+//            return true;
+//        }
+//        printErr("OptExpr");
+//        return false;
+//    }
+//
+//    // ? - production
+//    printNode("(null)", level + 1);
+//    return true;
+//}
 
 bool WhileStmt(int level, Attr& attr) {
   printNode("WhileStmt", level);
@@ -1164,7 +1165,7 @@ bool Mag_(int level, Attr& attr) {
         {
             M_Attr.A = newTemp();
             tac = tac + M_Attr.A + "=" + attr.A + "+" + Tattr.A + "\n";
-            if (Mag_(level + 1)) {
+            if (Mag_(level + 1, M_Attr)) {
                 attr.A = M_Attr.A;
                 return true;
             }
@@ -1178,7 +1179,7 @@ bool Mag_(int level, Attr& attr) {
         {
             M_Attr.A = newTemp();
             tac = tac + M_Attr.A + "=" + attr.A + "-" + Tattr.A + "\n";
-            if (Mag_(level + 1)) {
+            if (Mag_(level + 1, M_Attr)) {
                 attr.A = M_Attr.A;
                 return true;
             }
@@ -1200,7 +1201,7 @@ bool Term(int level, Attr& attr) {
     if (Factor(level + 1,Fattr))
     {
         T_Attr.A = Fattr.A;
-        if (Term_(level + 1)) {
+        if (Term_(level + 1, T_Attr)) {
             attr.A = T_Attr.A;
             return true;
         }
@@ -1322,7 +1323,7 @@ int main() {
         return 0;
     }
     int level = 0;
-    if (!Function(level)) {
+    if (!F(level)) {
         cout << "Error in tokens: " << endl;
         for (int i = pointer - 1;i < pointer + 3 && i < toks.size();i++) {
             cout << toks[i] << " ";
