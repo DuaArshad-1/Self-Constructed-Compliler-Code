@@ -521,23 +521,25 @@ string getOp(const string& token) {
 }
 
 
+bool F(int level);
+
 bool Function(int level);
 bool ArgList(int level);
 bool Arg(int level);
 bool ArgList_(int level);
 bool Declaration(int level);
 bool Type(int level);
-bool IdentList(int level);
+bool IdentList(int level;
 bool IdentList_(int level);
 bool Stmt(int level, Attr& attr);
 bool ForStmt(int level);
 bool OptExpr(int level);
-bool WhileStmt(int level);
+bool WhileStmt(int level, Attr& attr);   //change
 bool IfStmt(int level, Attr& attr);
 bool ElsePart(int level, Attr& attr);
-bool CompStmt(int level);
-bool StmtList(int level);
-bool StmtList_(int level);
+bool CompStmt(int level, Attr& attr);   //change
+bool StmtList(int level, Attr& attr); ///change
+bool StmtList_(int level, Attr& attr); ///change
 bool Expr(int level);
 bool Expr_(int level);
 bool Rvalue(int level, Attr& attr);
@@ -646,40 +648,42 @@ void printErr(string t) {
     err = t;
 }
 
-bool StmtList(int level) {
-    printNode("StmtList", level);
-    if (StmtList_(level + 1)) return true;
-    printErr("StmtList");
-    return false;
+bool StmtList(int level, Attr& attr) {
+  printNode("StmtList", level);
+  Attr stmtlis_;
+  stmtlis_.next = attr.next;
+  if (StmtList_(level + 1, stmtlis_))
+    return true;
+  printErr("StmtList");
+  return false;
 }
 
-bool StmtList_(int level) {
-    printNode("StmtList'", level);
-    if (
-        lookaheadToken == "<res,Agar>" ||   // if
-        lookaheadToken == "<res,while>" ||  // while
-        lookaheadToken == "<res,for>" ||  // for
-        lookaheadToken == "<punc,{>" ||  // compound stmt
-        isIdentifier(lookaheadToken) || // identifier (for assignments)
-        /*isLit(lookaheadToken)||*/
-        lookaheadToken == "<res,Adadi>" ||
-        lookaheadToken == "<res,Ashriya>" ||
-        lookaheadToken == "<res,Harf>" ||
-        lookaheadToken == "<res,Matn>" ||
-        lookaheadToken == "<res,Mantiqi>" ||   // declaration types
-        lookaheadToken == "<punc,::>" ||
-        lookaheadToken == "<punc,(>" ||
-        isNum(lookaheadToken)
-        )
-    {
-
-        if (Stmt(level + 1) && StmtList_(level + 1)) return true;
-        printErr("StmtList_");
-        return false;
-    }
-    // Empty production
-    printNode("(null)", level + 1);
-    return true;
+bool StmtList_(int level, Attr& attr) {
+  printNode("StmtList'", level);
+  if (lookaheadToken == "<res,Agar>" ||  // if
+      lookaheadToken == "<res,while>" || // while
+      lookaheadToken == "<res,for>" ||   // for
+      lookaheadToken == "<punc,{>" ||    // compound stmt
+      isIdentifier(lookaheadToken) ||    // identifier (for assignments)
+      /*isLit(lookaheadToken)||*/
+      lookaheadToken == "<res,Adadi>" || lookaheadToken == "<res,Ashriya>" ||
+      lookaheadToken == "<res,Harf>" || lookaheadToken == "<res,Matn>" ||
+      lookaheadToken == "<res,Mantiqi>" || // declaration types
+      lookaheadToken == "<punc,::>" || lookaheadToken == "<punc,(>" ||
+      isNum(lookaheadToken)) {
+    Attr stmts; //stmts
+    stmts.next = attr.next;
+    Attr stmtlis;  //stmtlist
+    stmtlis.next = attr.next;
+    // attr.next=stmts.next;
+    if (Stmt(level + 1, stmts) && StmtList_(level + 1, stmtlis))
+      return true;
+    printErr("StmtList_");
+    return false;
+  }
+  // Empty production
+  printNode("(null)", level + 1);
+  return true;
 }
 
 bool Type(int l) {
@@ -790,52 +794,61 @@ bool IdentList_(int l) {
     return true;
 }
 
+bool F(int level)
+{
+  Attr stmts;
+  stmts.next = newLabel();
+}
+
 bool Stmt(int l, Attr& attr) {
-    printNode("Stmt", l);
-    if (lookaheadToken == "<res,for>") {
-        if (ForStmt(l + 1)) return true;
-        printErr("Stmt");
-        return false;
-    }
-    else if (lookaheadToken == "<res,while>") {
-        if (WhileStmt(l + 1)) return true;
-        printErr("Stmt");
-        return false;
-    }
-    else if (
-        isIdentifier(lookaheadToken) || // identifier (for assignments)
-        lookaheadToken == "<punc,(>" ||
-        isNum(lookaheadToken)
-        ) {
-        if (Expr(l + 1) && getNextToken(l + 1) == "<punc,::>") return true;
-        printErr("Stmt");
-        return false;
-    }
-    else if (lookaheadToken == "<res,Agar>") {
-        if (IfStmt(l + 1)) return true;
-        printErr("Stmt");
-        return false;
-    }
-    else if (lookaheadToken == "<punc,{>") {
-        if (CompStmt(l + 1)) return true;
-        printErr("Stmt");
-        return false;
-    }
-    else if (lookaheadToken == "<res,Adadi>" ||
-        lookaheadToken == "<res,Ashriya>" ||
-        lookaheadToken == "<res,Harf>" ||
-        lookaheadToken == "<res,Matn>" ||
-        lookaheadToken == "<res,Mantiqi>") {
-        if (Declaration(l + 1)) return true;
-        printErr("Stmt");
-        return false;
-    }
-    else if (lookaheadToken == "<punc,::>") {
-        getNextToken(l + 1);
-        return true;
-    }
+  printNode("Stmt", l);
+  if (lookaheadToken == "<res,for>") {
+    if (ForStmt(l + 1))
+      return true;
     printErr("Stmt");
     return false;
+  } else if (lookaheadToken == "<res,while>") {
+    Attr whiles; // attr for while
+    whiles.F = attr.next;
+    if (WhileStmt(l + 1, whiles))
+      return true;
+    tac = tac + attr.next + ": " + '\n';
+    printErr("Stmt");
+    return false;
+  } else if (isIdentifier(lookaheadToken) || // identifier (for assignments)
+             lookaheadToken == "<punc,(>" || isNum(lookaheadToken)) {
+    if (Expr(l + 1) && getNextToken(l + 1) == "<punc,::>")
+      return true;
+    printErr("Stmt");
+    return false;
+  } else if (lookaheadToken == "<res,Agar>") {
+    Attr ifs; // attr for if
+    ifs.next = attr.next;
+    if (IfStmt(l + 1, ifs))
+      return true;
+    printErr("Stmt");
+    return false;
+  } else if (lookaheadToken == "<punc,{>") {
+    Attr comps; // attr for comps
+    comps.next = attr.next;
+    if (CompStmt(l + 1, comps))
+      return true;
+    printErr("Stmt");
+    return false;
+  } else if (lookaheadToken == "<res,Adadi>" ||
+             lookaheadToken == "<res,Ashriya>" ||
+             lookaheadToken == "<res,Harf>" || lookaheadToken == "<res,Matn>" ||
+             lookaheadToken == "<res,Mantiqi>") {
+    if (Declaration(l + 1))
+      return true;
+    printErr("Stmt");
+    return false;
+  } else if (lookaheadToken == "<punc,::>") {
+    getNextToken(l + 1);
+    return true;
+  }
+  printErr("Stmt");
+  return false;
 
 }
 
@@ -877,19 +890,27 @@ bool OptExpr(int level) {
     return true;
 }
 
-bool WhileStmt(int level) {
-    printNode("WhileStmt", level);
-    // while ( Expr ) Stmt
-    if (getNextToken(level + 1) == "<res,while>" &&
-        getNextToken(level + 1) == "<punc,(>" &&
-        Expr(level + 1) &&
-        getNextToken(level + 1) == "<punc,)>" &&
-        Stmt(level + 1))
-    {
-        return true;
+bool WhileStmt(int level, Attr& attr) {
+  printNode("WhileStmt", level);
+
+  // while ( Expr ) Stmt
+  attr.T = newLabel();
+  tac = tac + attr.T + ": " + '\n';
+  if (getNextToken(level + 1) == "<res,while>" &&
+      getNextToken(level + 1) == "<punc,(>") {
+    Attr rvalues;
+    rvalues.F = attr.F;
+    Rvalue(level + 1, rvalues);
+    if (getNextToken(level + 1) == "<punc,)>") {
+      Attr stmts;
+      stmts.next = attr.T;
+      Stmt(level + 1, stmts);
+      tac = tac + "goto " + attr.T + '\n';
+      return true;
     }
-    printErr("WhileStmt");
-    return false;
+  }
+  printErr("WhileStmt");
+  return false;
 }
 
 bool IfStmt(int level, Attr& attr) {
@@ -941,19 +962,18 @@ bool ElsePart(int level, Attr& attr) {
     return true;
 }
 
-bool CompStmt(int level) {
-    printNode("CompStmt", level);
-    // { StmtList }
-    if (getNextToken(level + 1) == "<punc,{>" &&
-        StmtList(level + 1) &&
-        getNextToken(level + 1) == "<punc,}>")
-    {
-        return true;
-    }
-    printErr("CompStmt");
-    return false;
+bool CompStmt(int level, Attr& attr) {
+  printNode("CompStmt", level);
+  // { StmtList }
+  Attr stmtlis;
+  stmtlis.next = attr.next;
+  if (getNextToken(level + 1) == "<punc,{>" && StmtList(level + 1, stmtlis) &&
+      getNextToken(level + 1) == "<punc,}>") {
+    return true;
+  }
+  printErr("CompStmt");
+  return false;
 }
-
 bool Expr(int level) {
     printNode("Expr", level);
     // According to your grammar, Expr has 3 possible forms:
