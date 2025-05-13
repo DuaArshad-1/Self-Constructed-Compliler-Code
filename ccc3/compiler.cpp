@@ -498,7 +498,10 @@ string getIdLexeme(const string& token, const string& filePath = "symbTable.txt"
     int currentLine = 1;
     while (getline(file, line)) {
         if (currentLine == index) {
-            return line;
+            istringstream iss(line);
+            string number, identifier;
+            iss >> number >> identifier;
+            return identifier;
         }
         currentLine++;
     }
@@ -523,17 +526,17 @@ string getOp(const string& token) {
 
 bool F(int level);
 
-bool Function(int level);
-bool ArgList(int level);
-bool Arg(int level);
-bool ArgList_(int level);
-bool Declaration(int level);
-bool Type(int level);
-bool IdentList(int level);
-bool IdentList_(int level);
+//bool Function(int level);
+//bool ArgList(int level);
+//bool Arg(int level);
+//bool ArgList_(int level);
+//bool Declaration(int level);
+//bool Type(int level);
+//bool IdentList(int level);
+//bool IdentList_(int level);
 bool Stmt(int level, Attr& attr);
-bool ForStmt(int level);
-bool OptExpr(int level);
+//bool ForStmt(int level);
+//bool OptExpr(int level);
 bool WhileStmt(int level, Attr& attr);   //change
 bool IfStmt(int level, Attr& attr);
 bool ElsePart(int level, Attr& attr);
@@ -541,7 +544,7 @@ bool CompStmt(int level, Attr& attr);   //change
 bool StmtList(int level, Attr& attr); ///change
 bool StmtList_(int level, Attr& attr); ///change
 bool Expr(int level, Attr& attr);
-bool Expr_(int level, Attr& attr);
+//bool Expr_(int level, Attr& attr);
 bool Rvalue(int level, Attr& attr);
 bool Rvalue_(int level, Attr& attr);
 bool Compare(int level, Attr& attr);
@@ -727,130 +730,141 @@ bool Compare(int l, Attr& attr) {
 //        return false;
 //    }
 //}
-
-bool ArgList(int l) {
-    printNode("ArgList", l);
-    if (Arg(l + 1) && ArgList_(l + 1)) {
-        return true;
-    }
-    printErr("ArgList");
-    return false;
-}
-
-bool ArgList_(int l) {
-    printNode("ArgList'", l);
-    if (lookaheadToken == "<res,Adadi>" ||
-        lookaheadToken == "<res,Ashriya>" ||
-        lookaheadToken == "<res,Harf>" ||
-        lookaheadToken == "<res,Matn>" ||
-        lookaheadToken == "<res,Mantiqi>")
-    {
-        if (Arg(l + 1) && ArgList_(l + 1)) {
-            return true;
-        }
-        printErr("ArgList'");
-        return false;
-    }
-    printNode("(null)", l + 1);
-    return true;
-}
-
-bool Arg(int l) {
-    printNode("Arg", l);
-    if (Type(l + 1) && isIdentifier(getNextToken(l + 1))) { return true; }
-
-    printErr("Arg");
-    return false;
-}
-
-bool Declaration(int l) {
-    printNode("Declaration", l);
-    if (Type(l + 1) && IdentList(l + 1) && getNextToken(l + 1) == "<punc,::>") {
-        return true;
-    }
-    printErr("Declaration");
-    return false;
-}
-
-bool IdentList(int l) {
-    printNode("IdentList", l);
-    if (isIdentifier(getNextToken(l + 1)) && IdentList_(l + 1)) return true;
-    printErr("IdentList");
-    return false;
-
-}
-
-bool IdentList_(int l) {
-    printNode("IdentList'", l);
-    if (lookaheadToken == "<punc,,>") {
-
-        if (getNextToken(l + 1) == "<punc,,>" && IdentList(l + 1)) {
-            return true;
-        }
-        printErr("IdentList'");
-        return false;
-    }
-    printNode("(null)", l + 1);
-    return true;
-}
+//
+//bool ArgList(int l) {
+//    printNode("ArgList", l);
+//    if (Arg(l + 1) && ArgList_(l + 1)) {
+//        return true;
+//    }
+//    printErr("ArgList");
+//    return false;
+//}
+//
+//bool ArgList_(int l) {
+//    printNode("ArgList'", l);
+//    if (lookaheadToken == "<res,Adadi>" ||
+//        lookaheadToken == "<res,Ashriya>" ||
+//        lookaheadToken == "<res,Harf>" ||
+//        lookaheadToken == "<res,Matn>" ||
+//        lookaheadToken == "<res,Mantiqi>")
+//    {
+//        if (Arg(l + 1) && ArgList_(l + 1)) {
+//            return true;
+//        }
+//        printErr("ArgList'");
+//        return false;
+//    }
+//    printNode("(null)", l + 1);
+//    return true;
+//}
+//
+//bool Arg(int l) {
+//    printNode("Arg", l);
+//    if (Type(l + 1) && isIdentifier(getNextToken(l + 1))) { return true; }
+//
+//    printErr("Arg");
+//    return false;
+//}
+//
+//bool Declaration(int l) {
+//    printNode("Declaration", l);
+//    if (Type(l + 1) && IdentList(l + 1) && getNextToken(l + 1) == "<punc,::>") {
+//        return true;
+//    }
+//    printErr("Declaration");
+//    return false;
+//}
+//
+//bool IdentList(int l) {
+//    printNode("IdentList", l);
+//    if (isIdentifier(getNextToken(l + 1)) && IdentList_(l + 1)) return true;
+//    printErr("IdentList");
+//    return false;
+//
+//}
+//
+//bool IdentList_(int l) {
+//    printNode("IdentList'", l);
+//    if (lookaheadToken == "<punc,,>") {
+//
+//        if (getNextToken(l + 1) == "<punc,,>" && IdentList(l + 1)) {
+//            return true;
+//        }
+//        printErr("IdentList'");
+//        return false;
+//    }
+//    printNode("(null)", l + 1);
+//    return true;
+//}
 
 bool F(int level)
 {
   Attr stmts;
   stmts.next = newLabel();
-  Stmt(level, stmts);
+  if (Stmt(level, stmts)) {
+      return true;
+  }
+  return false;
 }
 
 bool Stmt(int l, Attr& attr) {
-  printNode("Stmt", l);
-  if (lookaheadToken == "<res,for>") {
-    if (ForStmt(l + 1))
-      return true;
+    printNode("Stmt", l);
+    /*  if (lookaheadToken == "<res,for>") {
+        if (ForStmt(l + 1))
+          return true;
+        printErr("Stmt");
+        return false;
+      } else*/
+    if (lookaheadToken == "<res,while>") {
+        Attr whiles; // attr for while
+        whiles.F = attr.next;
+        if (WhileStmt(l + 1, whiles)) {
+            tac = tac + attr.next + ": " + '\n';
+            return true;
+        }
+        
+        printErr("Stmt");
+        return false;
+    }
+    else if (isIdentifier(lookaheadToken) || // identifier (for assignments)
+        lookaheadToken == "<punc,(>" || isNum(lookaheadToken)) {
+        Attr Eattr;
+        if (Expr(l + 1, Eattr) && getNextToken(l + 1) == "<punc,::>")
+            return true;
+        printErr("Stmt");
+        return false;
+    }
+    else if (lookaheadToken == "<res,Agar>") {
+        Attr ifs; // attr for if
+        ifs.next = attr.next;
+        if (IfStmt(l + 1, ifs))
+            return true;
+        printErr("Stmt");
+        return false;
+    }
+    else if (lookaheadToken == "<punc,{>") {
+        Attr comps; // attr for comps
+        comps.next = attr.next;
+        if (CompStmt(l + 1, comps))
+            return true;
+        printErr("Stmt");
+        return false;
+    }
+    //else if (lookaheadToken == "<res,Adadi>" ||
+    //    lookaheadToken == "<res,Ashriya>" ||
+    //    lookaheadToken == "<res,Harf>" || lookaheadToken == "<res,Matn>" ||
+    //    lookaheadToken == "<res,Mantiqi>") {
+    //    if (Declaration(l + 1))
+    //        return true;
+    //    printErr("Stmt");
+    //    return false;
+    //}
+    //else if (lookaheadToken == "<punc,::>") {
+    //    getNextToken(l + 1);
+    //    return true;
+    //}
     printErr("Stmt");
     return false;
-  } else if (lookaheadToken == "<res,while>") {
-    Attr whiles; // attr for while
-    whiles.F = attr.next;
-    if (WhileStmt(l + 1, whiles))
-      return true;
-    tac = tac + attr.next + ": " + '\n';
-    printErr("Stmt");
-    return false;
-  } else if (isIdentifier(lookaheadToken) || // identifier (for assignments)
-             lookaheadToken == "<punc,(>" || isNum(lookaheadToken)) {
-      Attr Eattr;
-    if (Expr(l + 1,Eattr) && getNextToken(l + 1) == "<punc,::>")
-      return true;
-    printErr("Stmt");
-    return false;
-  } else if (lookaheadToken == "<res,Agar>") {
-    Attr ifs; // attr for if
-    ifs.next = attr.next;
-    if (IfStmt(l + 1, ifs))
-      return true;
-    printErr("Stmt");
-    return false;
-  } else if (lookaheadToken == "<punc,{>") {
-    Attr comps; // attr for comps
-    comps.next = attr.next;
-    if (CompStmt(l + 1, comps))
-      return true;
-    printErr("Stmt");
-    return false;
-  } else if (lookaheadToken == "<res,Adadi>" ||
-             lookaheadToken == "<res,Ashriya>" ||
-             lookaheadToken == "<res,Harf>" || lookaheadToken == "<res,Matn>" ||
-             lookaheadToken == "<res,Mantiqi>") {
-    if (Declaration(l + 1))
-      return true;
-    printErr("Stmt");
-    return false;
-  } else if (lookaheadToken == "<punc,::>") {
-    getNextToken(l + 1);
-    return true;
-  }
-  printErr("Stmt");
-  return false;
 
 }
 
@@ -976,7 +990,7 @@ bool CompStmt(int level, Attr& attr) {
   printErr("CompStmt");
   return false;
 }
-bool Expr(int level) {
+bool Expr(int level,Attr & attr) {
     printNode("Expr", level);
     // According to your grammar, Expr has 3 possible forms:
     //  1) identifier Expr'
@@ -986,7 +1000,7 @@ bool Expr(int level) {
     // 1) identifier Expr'
     Attr Mattr;
     if (isIdentifier(lookaheadToken)) {
-        getNextToken(level + 1);  // consume the identifier
+        string idtokk=getNextToken(level + 1);  // consume the identifier
        /* if (Expr_(level + 1)) {
             return true;
         }*/
@@ -998,7 +1012,7 @@ bool Expr(int level) {
             }*/
             if (Mag(level, Mattr))
             {
-                tac = tac + getIdLexeme(lookaheadToken) + "=" + Mattr.A + "\n";
+                tac = tac + getIdLexeme(idtokk) + "=" + Mattr.A + "\n";
                 return true;
             }
         }
@@ -1276,13 +1290,17 @@ bool Factor(int level, Attr& attr) {
         return false;
     }
     else if (isIdentifier(lookaheadToken)) {
-        getNextToken(level + 1);
-        attr.A = getIdLexeme(lookaheadToken);
+        
+        attr.A = getIdLexeme(getNextToken(level + 1));
         return true;
     }
     else if (isNum(lookaheadToken)) {
+        size_t start = lookaheadToken.find(",") + 1;
+        size_t end = lookaheadToken.find(">");
+
+        attr.A = lookaheadToken.substr(start, end - start);
+        //attr.A = lookaheadToken.substr(lookaheadToken.find(",") + 1, (lookaheadToken.find(">")) ); //<num,5>
         getNextToken(level + 1);
-        attr.A= lookaheadToken.substr(lookaheadToken.find(",") + 2, lookaheadToken.length() - 2);
         return true;
     }
     printErr("Factor");
@@ -1322,6 +1340,7 @@ int main() {
         cout << "error in readFiles" << endl;
         return 0;
     }
+    lookaheadToken = toks[pointer];
     int level = 0;
     if (!F(level)) {
         cout << "Error in tokens: " << endl;

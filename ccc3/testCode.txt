@@ -1,6 +1,4 @@
-Adadi Aloo_ (Adadi _paratha_)
 {
-
 _num:= 5 ::
 while ( _num > 0 ) {
 _num:= _num - 1::
@@ -11,6 +9,6 @@ Wagarna
 cou_se := cou_se + 2 ::
 
 
-cou_se := cou_se + 5 ::
+cou_se := cou_se + 5 * 6 ::
 }
 }
